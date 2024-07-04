@@ -1,8 +1,9 @@
-use flate2::read::GzDecoder;
+use flate2::bufread::ZlibDecoder;
 #[allow(unused_imports)]
 use std::env;
 #[allow(unused_imports)]
 use std::fs;
+use std::io::Read;
 
 fn main() {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -37,9 +38,11 @@ fn cat_file(flag: &str, hash: &str) {
             println!("dir: {}", path);
 
             let gz_blob = fs::read(path).unwrap();
-            let gz_blob = GzDecoder::new(gz_blob.as_slice());
+            let mut gz_blob = ZlibDecoder::new(gz_blob.as_slice());
 
-            println!("Header: {:?}", gz_blob.header());
+            let mut output = String::new();
+            gz_blob.read_to_string(&mut output).unwrap();
+            println!("{}", output);
         }
         _ => print!("invalid flag: {}", flag),
     }

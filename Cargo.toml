@@ -1,5 +1,5 @@
 [package]
-name = "MyGit"
+name = "my_git"
 version = "0.1.0"
 edition = "2021"
 
