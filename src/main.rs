@@ -92,11 +92,8 @@ fn hash_object(file: &str, write: bool) {
         e.write_all(complete.as_bytes()).unwrap();
         let compressed = e.finish().unwrap();
 
-        println!("{}", path);
-        println!("{:?}", compressed);
+        println!("file: {}", path);
 
         fs::write(path, compressed).unwrap();
     }
-
-    println!("{:?}", hash);
 }
