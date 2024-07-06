@@ -72,22 +72,48 @@ fn cat_decoded(compressed_blob: &[u8]) -> ZlibDecoder<&[u8]> {
 
 fn cat_file(flag: &str, hash: &str) -> String {
     let path = get_hash_file(hash);
-    // println!("dir: {}", path);
+
+    let binding = fs::read(path).unwrap();
+    let mut decoded = cat_decoded(binding.as_slice());
+    let decoded2 = cat_decoded(binding.as_slice());
+
+    let mut hash_type = Vec::new();
+    let mut size = Vec::new();
+    let mut find_size = false;
+    for b in decoded2.bytes() {
+        let val = b.unwrap();
+
+        if val == b' ' {
+            find_size = true;
+            continue;
+        } else if val == b'\x00' {
+            break;
+        }
+
+        if find_size {
+            size.push(val);
+        } else {
+            hash_type.push(val);
+        }
+    }
+    let hash_type = String::from_utf8(hash_type).unwrap();
+    let size = String::from_utf8(size).unwrap();
 
     let mut output = String::new();
-    cat_decoded(fs::read(path).unwrap().as_slice())
-        .read_to_string(&mut output)
-        .unwrap();
+    if hash_type == "blob" {
+        decoded.read_to_string(&mut output).unwrap();
 
-    let arr = output.split("\x00").collect::<Vec<&str>>();
-    let output = arr[1];
-
-    let prefix = arr[0].split(" ").collect::<Vec<&str>>();
-    let hash_type = prefix[0];
-    let size = prefix[1];
+        let arr = output.split("\x00").collect::<Vec<&str>>();
+        output = arr[1].to_owned();
+    } else {
+        output = String::new();
+    }
 
     match flag {
-        "-p" => output.to_owned(),
+        "-p" => {
+            ls_tree(hash);
+            output
+        }
         "-s" => size.to_string(),
         "-t" => hash_type.to_owned(),
         _ => format!("invalid flag: {}", flag),
@@ -127,7 +153,7 @@ fn hash_object(file: &str, write: bool) {
  <mode> <name>\0<20_byte_sha>
  <mode> <name>\0<20_byte_sha>
 */
-fn ls_tree(hash: &str) -> String {
+fn ls_tree(hash: &str) {
     let path = get_hash_file(hash);
     let compressed_blob = fs::read(path).unwrap();
     let decoded = cat_decoded(compressed_blob.as_slice());
@@ -145,11 +171,18 @@ fn ls_tree(hash: &str) -> String {
         let val = byte.unwrap();
 
         if to_write == 0 {
+            if val == b' ' {
+                if String::from_utf8(header.clone()).unwrap() != "tree" {
+                    println!("Not a tree hash type");
+                    break;
+                }
+            }
+
             header.push(val);
 
             if val == b'\x00' {
                 to_write = 1;
-                println!("{}", String::from_utf8(header.clone()).unwrap());
+                // println!("{}", String::from_utf8(header.clone()).unwrap());
             }
 
             continue;
@@ -165,6 +198,7 @@ fn ls_tree(hash: &str) -> String {
         }
 
         if val == b' ' && to_write != 3 {
+            mode.pop();
             to_write = 2;
         } else if val == b'\x00' && to_write != 3 {
             name.pop();
@@ -175,29 +209,24 @@ fn ls_tree(hash: &str) -> String {
 
             let this_hash = hex::encode(sha_hash.as_slice());
             let str_name = String::from_utf8(name.clone()).unwrap();
-            let str_mode = String::from_utf8(mode.clone()).unwrap();
+            let mut str_mode = String::from_utf8(mode.clone()).unwrap();
 
             let file_type = {
                 if str_mode.replace(" ", "") == "40000" {
+                    str_mode = "040000".to_owned();
                     "tree"
                 } else {
                     "blob"
                 }
             };
 
-            println!("{} {} {}   {}", str_mode, file_type, this_hash, str_name);
+            println!("{} {} {}    {}", str_mode, file_type, this_hash, str_name);
 
             mode.clear();
             name.clear();
             sha_hash.clear();
         }
     }
-
-    return String::from_utf8(header.clone())
-        .unwrap()
-        .split(" ")
-        .collect::<Vec<&str>>()[0]
-        .to_owned();
 }
 
 fn write_tree() {}
