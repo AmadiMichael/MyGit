@@ -39,3 +39,15 @@ If omited it will only print out the hash object and not write it to `.git/objec
 `-p` prints the original content of the hash, `-s` prints the size and `-t` prints the type (blob, tree or commit)
 
 You can also use normal git in this folder and use git log to get past commit hashes and view info on that using `../my_git.sh cat-file -p ...`
+
+### Write everything in the working directory (Tree (directory) objects)
+
+```zsh
+../my_git.sh write-tree
+```
+
+### View the contents of a tree object hash
+
+```zsh
+../my_git.sh ls-tree [hash]
+```
