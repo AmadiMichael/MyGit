@@ -277,7 +277,6 @@ fn write_tree(path: &str) -> String {
             } else {
                 let mut this_path = path.to_owned();
                 this_path.push_str(&file);
-                // println!("this_path {}", this_path);
 
                 ("100644".to_owned(), hash_object(&this_path, true))
             }
