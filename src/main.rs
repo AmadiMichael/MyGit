@@ -272,12 +272,12 @@ fn write_tree(path: &str) -> Vec<u8> {
         }
     }
 
-    let mut hasher = Sha1::new();
-    hasher.update(&contents);
-    let hash = hasher.finalize();
-
     let mut complete = format!("tree {}\0", contents.len()).as_bytes().to_vec();
     complete.extend(contents);
+
+    let mut hasher = Sha1::new();
+    hasher.update(&complete);
+    let hash = hasher.finalize();
 
     let hex_hash = hex::encode(&hash);
     let mut this_path = String::from(".git/objects/");
