@@ -98,8 +98,6 @@ fn hash_object(file: &str, write: bool) -> Vec<u8> {
         e.write_all(complete.as_bytes()).unwrap();
         let compressed = e.finish().unwrap();
 
-        // println!("{}", path);
-
         fs::write(path, compressed).unwrap();
     }
 
@@ -160,23 +158,23 @@ fn ls_tree(flag: &str, hash: &str) {
                 b' ' => {
                     to_fill = 2;
                 }
-                b'\x00' => {
+                b'\0' => {
                     to_fill = 3;
                 }
                 _ => match to_fill {
                     1 => {
                         let len = modes.len();
-                        let latest: &mut Vec<u8> = &mut modes[len - 1];
+                        let latest = &mut modes[len - 1];
                         latest.push(val);
                     }
                     2 => {
                         let len = names.len();
-                        let latest: &mut Vec<u8> = &mut names[len - 1];
+                        let latest = &mut names[len - 1];
                         latest.push(val);
                     }
                     3 => {
                         let len = hashes.len();
-                        let latest: &mut Vec<u8> = &mut hashes[len - 1];
+                        let latest = &mut hashes[len - 1];
                         latest.push(val);
                         hash_count += 1;
 
@@ -201,7 +199,7 @@ fn ls_tree(flag: &str, hash: &str) {
                 if i == last {
                     print!("{}", String::from_utf8(name).unwrap());
                 } else {
-                    print!("{}\n", String::from_utf8(name).unwrap());
+                    println!("{}", String::from_utf8(name).unwrap());
                 }
             }
         }
@@ -240,9 +238,6 @@ fn write_tree(path: &str) -> Vec<u8> {
     ignored.push(Path::new(".git").canonicalize().unwrap());
 
     let mut contents = vec![];
-
-    // println!("{:?}", working_directory);
-    // println!("ignored: {:?}", ignored);
 
     for file in &working_directory {
         if ignored.contains(&file.canonicalize().unwrap()) {
