@@ -6,6 +6,7 @@ use std::{
     fs,
     io::{Read, Write},
     path::{Path, PathBuf},
+    time,
 };
 
 fn main() {
@@ -36,6 +37,24 @@ fn main() {
         }
         "write-tree" => {
             println!("{}", hex::encode(write_tree("./")));
+        }
+        "commit-tree" => {
+            let root_tree_hash = args.get(2).expect("expected commit tree hash").as_str();
+            let parent_tree_hash;
+            let commit_message;
+
+            if args.get(3).expect("expected -p").as_str() == "-p" {
+                if args.get(5).expect("expected -m").as_str() == "-m" {
+                    parent_tree_hash = args.get(4).expect("expected a parent tree hash").as_str();
+                    commit_message = args.get(6).expect("expected a commit message").as_str();
+
+                    commit_tree(root_tree_hash, parent_tree_hash, commit_message);
+                } else {
+                    println!("expected -p");
+                }
+            } else {
+                println!("expected -m");
+            }
         }
         _ => println!("unknown command: {}", args[1]),
     }
@@ -288,4 +307,41 @@ fn write_tree(path: &str) -> Vec<u8> {
     fs::write(this_path, compressed).unwrap();
 
     hash.to_vec()
+}
+
+fn commit_tree(root_tree_hash: &str, parent_tree_hash: &str, commit_message: &str) {
+    let mut contents = format!("tree {}\n", root_tree_hash);
+    contents.push_str(&format!("parent {}\n", parent_tree_hash));
+
+    let timestamp = time::UNIX_EPOCH.elapsed().unwrap().as_secs();
+
+    contents.push_str(&format!(
+        "author AmadiMichael <amadimichaeld@gmail.com> {timestamp} +0100\n",
+    ));
+    contents.push_str(&format!(
+        "committer AmadiMichael <amadimichaeld@gmail.com> {timestamp} +0100\n",
+    ));
+    contents.push_str(&format!("\n{commit_message}\n"));
+
+    let mut complete = format!("commit {}\0", contents.len());
+    complete.push_str(&contents);
+
+    let mut hasher = Sha1::new();
+    hasher.update(&complete);
+    let hash = hasher.finalize();
+
+    let hex_hash = hex::encode(&hash);
+    let mut this_path = String::from(".git/objects/");
+    this_path.push_str(&hex_hash[0..2]);
+    let _ = fs::create_dir(&this_path);
+    this_path.push('/');
+    this_path.push_str(&hex_hash[2..]);
+
+    let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+    encoder.write_all(&complete.as_bytes()).unwrap();
+    let compressed = encoder.finish().unwrap();
+
+    fs::write(this_path, compressed).unwrap();
+
+    println!("{hex_hash}");
 }
