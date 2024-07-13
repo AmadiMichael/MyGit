@@ -213,12 +213,10 @@ fn ls_tree(flag: &str, hash: &str) {
 
     match flag {
         "--name-only" => {
-            let last = names.len() - 1;
-            for (i, name) in names.into_iter().enumerate() {
-                if i == last {
-                    print!("{}", String::from_utf8(name).unwrap());
-                } else {
-                    println!("{}", String::from_utf8(name).unwrap());
+            for name in names {
+                match name.last() {
+                    Some(b'\n') | None => print!("{}", String::from_utf8_lossy(&name)),
+                    _ => println!("{}", String::from_utf8_lossy(&name)),
                 }
             }
         }
