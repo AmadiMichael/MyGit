@@ -51,3 +51,9 @@ You can also use normal git in this folder and use git log to get past commit ha
 ```zsh
 ../my_git.sh ls-tree [hash]
 ```
+
+### Create a commit
+
+```zsh
+../my_git.sh commit-tree [root_tree_hash] -p [parent_tree_hash] -m [commit_message]
+```
